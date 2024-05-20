@@ -103,7 +103,7 @@ Once you have made this change, you will need to save the changes. Notice at the
   <br>
   Running blastn in simple mode will create a new directory called blast_out in your current directory (unless this directory already exists), and also create symolic links to the ncbi taxadb files 'taxdb.btd' and 'taxdb.bti' in the current directory. It will then run blastn and the output will be saved as blast_out/all_blast.out.tab. 
   
-  <b>To run the 01_run_blastn_simple.sh script you must supply two arguments:<b>
+  <b>To run the 01_run_blastn_simple.sh script you must supply two arguments:</b>
   - the relative path to the fasta file containing the sequence data (-F)
   - the location of an ncbi database on the HPC (-B)
   
