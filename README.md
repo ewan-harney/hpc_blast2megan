@@ -196,7 +196,7 @@ Once you have made this change, you will need to save the changes. Notice at the
   
   This script will provide 2 intermediate files (filtered_blast.out.tab and megan_full_out.tsv) and it's final output file, megan_sum_out.tsv can be used in downstream analysis.
 
-  <b>To run the 02_run_blast2lca.sh script you must supply three arguments:<b>
+  <b>To run the 02_run_blast2lca.sh script you must supply three arguments:</b>
   - Minimum percentage identity (0-100) for the blast results to be considered by blast2lca (-B)
   - Minimum percentage of matching alignments (0-100) for taxonomic assignemnt in blast2lca (-M)
   - Absolute path to the megan nucleotide database (-D)
