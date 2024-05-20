@@ -1,13 +1,10 @@
-<br>
-<br>
 ## Assigning taxonomy with BLASTn and MEGAN on UoS BESSEMER.
-<br>
-<font size="4">
-<details><summary><font size="6"><b>1) About, credits, and other information</b></font></summary>
-  <br>
-  <br>
-  This short HPC tutorial uses BLASTn to query the identity of nucleotide sequence data against an ncbi database, and applies the MEGAN LCA (lowest common ancestor) algorithm to provide a probable taxonomic assignment.
+This short HPC tutorial uses BLASTn to query the identity of nucleotide sequence data against an ncbi database, and applies the MEGAN LCA (lowest common ancestor) algorithm to provide a probable taxonomic assignment.
+<br></br>
 
+<font size="4">
+<details><summary><font size="6"> **1) About, credits, and other information** </font></summary>
+  <br>
   The workflow was designed as an alternative method of taxonomic assignment to the dada2 "assign taxonomy" step featured in step 11 of Katy Maher's [dada2 pipeline] (https://github.com/khmaher/HPC_dada2), which is primarily designed for microbial data sets.
 
   For metabarcoding projects featuring eukaryotic data, using blastn to query the sequences against ncbi's nt database can provide a reliable means of identifying sequences with diverse taxonomic origins. By default BLAST will output many sequences that match the query sequence, ain some cases making it hard to tell which species the query sequence belongs to. THE LCA algorthm of MEGAN takes the 
