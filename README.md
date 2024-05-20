@@ -58,7 +58,7 @@ cp -r hpc_blast2megan/b2m_scripts .
 rm -r hpc_blast2megan
 ```
 
-Check the contents of the b2m_scripts directory. There should be 5 files in the directory: 5 .sh files and 1 .R script:
+Check the contents of the b2m_scripts directory. There should be 5 files in the directory: 6 .sh files and 1 .R script:
 
 ```
 ls b2m_scripts
