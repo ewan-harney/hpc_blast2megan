@@ -284,13 +284,13 @@ Reducing -B allows sequences with lower blast percentage identity to be consider
 <br><br>
 If you have run this pipeline after dada2, you may wish to combine taxonomic assignment results with sequence data and ASV counts from dada2 to create a summary file with all the information.
 <br><br>
-Assuming you have created the megan_sum_out.tsv file in the previous step and have the files 06_ASV_seqs.fasta and 06_ASV_counts.tsv in your working_data directory you should be able to run the following script (no arguements need to be supplied): 
+Assuming you have created the 'megan_sum_out.tsv' file in the previous step and have the files '06_ASV_seqs.fasta' and '06_ASV_counts.tsv' in your 'working_data' directory you should be able to run the following script (no arguments need to be supplied): 
 
 ```
 qsub b2m_scripts/03_run_make_summary_file.sh
 ```
   
-This script will call the R script 03_make_summary_file.R and write the output to blast_out/ASV_taxa-summary_counts.tsv. This file contains a summary of taxonomic, sequence and count results.
+This script will call the R script 03_make_summary_file.R and write the output to blast_out/ASV_taxa-summary_counts.tsv. This file contains a summary of taxonomic, sequence, and count results.
 </font>
 <br>
 </details>
