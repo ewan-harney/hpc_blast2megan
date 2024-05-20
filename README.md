@@ -119,7 +119,7 @@ Once you have made this change, you will need to save the changes. Notice at the
   <br>
   Running blastn in array mode requires running 2 scripts one after the other: first '01A_run_split_fasta.sh' and then '01B_run_blastn_array.sh'. The '01A_run_split_fasta.sh' script will create a directory called split_fasta. The input sequence fasta file will then be split into chunks each containing 100 sequences which will be written to split_fasta. Like the 01_run_blastn_simple.sh this script will create symolic links to the ncbi taxadb files 'taxdb.btd' and 'taxdb.bti', and will also create a directory called 'logs', which will be used by script 01B. As well as creating the chunk.fa files, it will also create a text file 'split_fasta_list_of_X.txt' with the names of the chunks for the next step. In your file the 'X' will be the number of chunks in split_fasta. This number is a parameter for script '01B_run_blastn_array.sh'.
   
-  <b>To run the 01A_run_split_fasta.sh script you just need to provide the path to the sequence data:<b>
+  <b>To run the 01A_run_split_fasta.sh script you just need to provide the path to the sequence data:</b>
   - the relative path to the fasta file containing the sequence data (-F)
   
   An example command if you have run the dada2 pipeline might be:
@@ -130,7 +130,7 @@ Once you have made this change, you will need to save the changes. Notice at the
   
   The '01B_run_blastn_array.sh' script will then use an array to simultaneously blast multiple chunk.fa files against an ncbi database. This script will  create a new directory called blast_out in your current directory (unless this directory already exists) and write the output of each chunk to a seperate chunk.fa_blast.out.tab.
   
-  <b>To run the 01A_run_split_fasta.sh script you must supply two arguments:<b>
+  <b>To run the 01A_run_split_fasta.sh script you must supply two arguments:</b>
   - the location of an ncbi database on the HPC (-B)
   - the number of input files to be run on the array (-N)
   
