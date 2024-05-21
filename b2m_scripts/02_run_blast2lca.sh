@@ -14,9 +14,8 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=user@uni.ac.uk
 
-## load profile and conda environment (maybe don't need conda environment)
+## load profile
 source ~/.bash_profile
-conda activate /usr/local/extras/Genomics/apps/mambaforge/envs/metabarcoding
 
 USAGE="Usage: $(basename "$0") -B <blast percent ID value 0-100> -M <megan percent of reads 0-100> -D <abs path of megan nucl database> \n
 The script takes the output from blast (located in the blast_out directory), and applies the following: \n

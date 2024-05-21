@@ -14,7 +14,7 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=user@uni.ac.uk
 
-## load profile
+## load profile. Conda environment required to run Rscript command
 source ~/.bash_profile
 conda activate /usr/local/extras/Genomics/apps/mambaforge/envs/metabarcoding
 

@@ -16,7 +16,6 @@
 
 ## load profile
 source ~/.bash_profile
-conda activate /usr/local/extras/Genomics/apps/mambaforge/envs/metabarcoding
 
 USAGE="Usage: $(basename "$0") -F <relative path to fasta file> -B <absolute path to blast db> \n
 The script assumes you have relatively few ASVs to identify (less that 1000) 

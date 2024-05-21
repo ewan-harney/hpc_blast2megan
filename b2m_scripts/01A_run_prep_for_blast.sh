@@ -14,9 +14,8 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=user@uni.ac.uk
 
-## load profile and conda environment (maybe don't need conda environment)
+## load profile
 source ~/.bash_profile
-conda activate /usr/local/extras/Genomics/apps/mambaforge/envs/metabarcoding
 
 USAGE="Usage: $(basename "$0") -F <relative path to fasta file> \n
 The script assumes you have a relatively large number of ASVs to identify (more that 1000) 

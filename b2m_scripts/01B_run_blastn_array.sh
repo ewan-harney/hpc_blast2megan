@@ -14,9 +14,8 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=user@uni.ac.uk
 
-## load profile and conda environment (maybe don't need conda environment)
+## load profile
 source ~/.bash_profile
-conda activate /usr/local/extras/Genomics/apps/mambaforge/envs/metabarcoding
 
 USAGE="Usage: $(basename "$0") -B <absolute path to blast db> -N <number of files in the array> \n
 This script must only be run following script 01A_run_prep_for_blast.sh. It uses 
