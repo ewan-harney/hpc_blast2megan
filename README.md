@@ -50,12 +50,11 @@ Navigate to your project directory. If you have been running the dada2 analysis 
 
 <font size="4"><b>2.3) Copy blast2megan scripts</b></font>
 <br></br>
-Clone (download) this github repository, and copy the b2m_scripts directory contained within to your current location. You can then delete the github download:
+Clone (download) this github repository, and copy the b2m_scripts directory contained within to your current location.
   
 ```
 git clone "https://github.com/ewan-harney/hpc_blast2megan"
 cp -r hpc_blast2megan/b2m_scripts .
-rm -r hpc_blast2megan
 ```
 
 Check the contents of the b2m_scripts directory. There should be 5 files in the directory: 6 .sh files and 1 .R script:
