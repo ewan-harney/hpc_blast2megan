@@ -275,9 +275,7 @@ It is common to have some non assigned and unknown taxa in your data, as well as
 
 Reducing -B allows sequences with lower blast percentage identity to be considered by MEGAN, and may reduce the number of sequences without assignment.  
 Reducing -T will decrease the number of sequences included in the blast2lca, potentially providing more specific taxonomic assignement.
-<br>
-</details>
-<br>
+<br><br>
 
 Take a look at the results for the taxon path file with:
 
@@ -287,8 +285,9 @@ head blast_out/megan_taxonpath_out.tsv
 Columns corespond to: ASV ID / domain / kingdom / phylum / class / order / family / genus / species / subspecies 
 
 The taxon path is provided down to the lowest common ancestor. Lower taxonomic levels are then assigned an NA. If taxonomic information does not exist in the database then it will be referred to as an unknown example using the next highest available taxa. For example, molluscs in the family Lymnaeoidea (class gastropoda) do not have information available about their order (although infraclass, superorder and superfamily levels exist). In this case they will be assigned "unknown_gastropod_order". This does not mean taxonomic assignment has failed, just that the taxonomy of the organism may not conform with the standard 8/9 taxonomic ranks.  
-
-<br><br>
+<br>
+</details>
+<br>
 
 <details><summary><font size="6"><b>5) OPTIONAL: Combine with dada2 output to create a summary file</font></b></summary>
 <br><br>
