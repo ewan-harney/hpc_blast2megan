@@ -19,8 +19,16 @@ source ~/.bash_profile
 conda activate /usr/local/extras/Genomics/apps/mambaforge/envs/metabarcoding
 
 USAGE="Usage: $(basename "$0") \n
-The script calls an R script that combines megan_sum_out.tsv (located in blast_out) with the dada2 output files 06_ASV_seqs.fasta and 06_ASV_counts.tsv (located in working_data) and writes the output to blast_out/ASV_taxa-summary_counts.tsv. It will not run without all 3 files. 
-The script does not require any arguments, and can be run as so: \n
+The script calls an R script that combines the two main output files from 02_run_blast2lca.sh with dada2 output files to make a final summary file:\n
+The blast2lca files required are: \n
+- blast_out/megan_taxonpath_out.tsv \n
+- blast_out/megan_summary_out.tsv \n
+Whilst the dada2 output files required are: \n
+-working_data/06_ASV_seqs.fasta \n
+-working_data/06_ASV_counts.tsv \n
+These four files are combined and the output is written to:\n
+- working_data/ASV_taxa_seq_counts.tsv \n
+The script will only work if all 4 files are found, but does not require any arguments, and can be run as so: \n
 qsub b2m_scripts/03_run_make_summary_file.sh \n"
 
 MAIN_DIR=$PWD

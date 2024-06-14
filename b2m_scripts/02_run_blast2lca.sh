@@ -17,35 +17,38 @@
 ## load profile
 source ~/.bash_profile
 
-USAGE="Usage: $(basename "$0") -B <blast percent ID value 0-100> -M <megan percent of reads 0-100> -D <abs path of megan nucl database> \n
+USAGE="Usage: $(basename "$0") -B <blast percent ID value 0-100> -T <blast2lca top percent 1-10> -D <abs path of megan nucl database> \n
 The script takes the output from blast (located in the blast_out directory), and applies the following: \n
 step1: Merge results if blast was run in array mode (automatically detected);
 step2: Filter blast results by percentage ID (0-100). The user provides a 
        minimum percentage ID  with -B for filtering blast results. We recommend 85-95;
 step3: Run the megan2lca (lowest common ancestor) algorithm to determine taxonomic likelihood of 
-       ASV at all taxonomic levels;
-step4: Taxonomic identification based on level at which minimum percentage of alignments match. 
-       The user provides a minimum percentage of matching alignments required with -M.
-       We recommend 70-100;
+       ASV at all taxonomic levels; -T should be set to a value between 1 and 10
+step4: Formatting of the output of blast2lca for downstream analyses
+       This includes taxon path files and a summary file
 Here is an example of how to run the script: \n
-qsub b2m_scripts/02_run_blast2lca.sh -B 90 -M 100 -D /shared/genomicsdb2/shared/megan/megan-nucl-Feb2022.db \n
+qsub b2m_scripts/02_run_blast2lca.sh -B 90 -T 2 -D /shared/genomicsdb2/shared/megan/megan-nucl-Feb2022.db \n
 The script assumes blast results (whether from simple or array mode) are located in the directory 
 blast_out, and also saves intermediate and final files to the same directory. \n\n"
 
 ## List arguments
-while getopts B:M:D: flag; do
+while getopts B:T:D: flag; do
 	case "${flag}" in
 		B) BPI=${OPTARG};;
-		M) MPI=${OPTARG};;
+		T) TOP_PER=${OPTARG};;
 		D) MEG_DB=${OPTARG};;
 	esac
 done
 
 ## Check mandatory arguments
 shift $((OPTIND-1))
-if [ -z "${BPI}" ] || [ -z "${MPI}" ] || [ -z "${MEG_DB}" ]; then
+if [ -z "${BPI}" ] || [ -z "${TOP_PER}" ] || [ -z "${MEG_DB}" ]; then
    printf "\n\n${USAGE}" >&2; exit 1
 fi
+
+echo "blast percent identity value = " ${BPI}
+echo "blast2lca top percent value = "${TOP_PER}
+
 
 ## Define path variables
 MAIN_DIR=$PWD
@@ -57,83 +60,134 @@ if [ -f "${MAIN_DIR}/${OUT_DIR}/chunk0.fa_blast.out.tab" ]; then
   cat ${MAIN_DIR}/${OUT_DIR}/chunk* > ${MAIN_DIR}/${OUT_DIR}/all_blast.out.tab
 fi
 
-## Step 2: Remove additional taxa information and filter by user specified blast percentage identity (blast threshold or BPI)
+## Step 2: Remove additional taxa information and filter by user specified blast percentage identity (BPI)
 cut -f1-12 ${MAIN_DIR}/${OUT_DIR}/all_blast.out.tab | awk -v var="${BPI}" '$3 >= var' > ${MAIN_DIR}/${OUT_DIR}/filtered_blast.out.tab
 
 
-## Step 3: Run the Megan blast2lca (lowest common ancestor) algorithm
-/usr/local/extras/Genomics/apps/megan/tools/blast2lca -i ${MAIN_DIR}/${OUT_DIR}/filtered_blast.out.tab -m BlastN -o ${MAIN_DIR}/${OUT_DIR}/megan_full_out.tsv -mdb ${MEG_DB}
+## Step 3: Run the Megan blast2lca (lowest common ancestor) algorithm with a user specified top percent threshold (TOP_PER)
+/usr/local/extras/Genomics/apps/megan/tools/blast2lca -i ${MAIN_DIR}/${OUT_DIR}/filtered_blast.out.tab -m BlastN -o ${MAIN_DIR}/${OUT_DIR}/megan_full_out.tsv -mdb ${MEG_DB} -top ${TOP_PER}
 
-## Step 4: Take the full megan output and only show lowest common ancestor at a user specified threshold (megan threshold or MPI) 
-## This includes a long conditional awk one-liner with if else statements nested within further if else statements. Ideally the 
-## megan output would be consistent, but the number of fields (columns) can vary. After applying the cut command, values seen 
-## include:
-## > 1 or 2 (implying a failure to assign taxonomy)
-## > 16 (missing one taxonomic level)
-## > 18 (expected taxonomic levels to species) 
-## > 20 (expected taxonomic levels to subspecies) 
-## We allow 14 to 22 columns (14 in case it is missing two taxonomic levels, 22 in case an additonal rank appears). 
-## If there are 14-22 columns but no blast2lca taxonomic assignment above the MPI threshold it receives the "y unknown' label. 
-## If there are less than 14 columns it receives the "x no_assignment" label
-## If there are more than 22 columns it receives the "z check_meganfull" label
-cut -d ';' -f1,3,4,17- ${MAIN_DIR}/${OUT_DIR}/megan_full_out.tsv | \
-awk -v var="${MPI}" -F ';' '
+## Step 4: Take the full megan output and produce summary files for downstream analysis.
+## This is actually 5 separate "one-liners": piped awk (and sed) commands to format the megan_full_out.tsv file.
+##
+## The first two commands produce temporary files (tmp_step*) that will be deleted at the end of the script. These are necessary
+## because the number of fields (columns) can vary in the megan output.
+##
+## The third command produces a taxon path file containing the numbers of blast hits assigned at each taxonomic level.
+## In most cases this won't be used, but can be diagnisotic if many ASVs have only higher taxonomic assignment.
+##
+## The fourth command produces a taxon path file where assignment is provided up to the point at which 100% of blast
+## hits match (the lowest common ancestor). Lower taxonomic levels are assigned values of NA.
+##
+## The fifth command produces a taxon summary file with just the lowest common ancestor and it's taxonomic rank.
+
+## Step 4 Command 1
+sed -e 's/;/,/g' ${MAIN_DIR}/${OUT_DIR}/megan_full_out.tsv | sed -e 's/s__/b__/3' | \
+    awk -F ',' '{if ($0 ~ /d__/) {print $0} \
+                 else {print $0 ",d__missing, NA"}}' | \
+    awk -F ',' '{if ($0 ~ /k__/) {print $0} \
+                 else if ($0 !~ /d__Eukaryota/) {split ($3, DOM, "__"); print $0 ",k__" DOM[2] ", NA"} \
+                 else {print $0 ",k__missing, NA"}}'| 
+    awk -F ',' '{if ($0 !~ /p__/) {print $0 ",p__missing, NA"} \
+                 else if ($0 ~ /p__.+p__/ || $0 !~ /p__unknown/) {print $0} \
+                 else {print $0 ",p__missing, NA"}}' | \
+    awk -F ',' '{if ($0 !~ /c__/) {print $0 ",c__missing, NA"} \
+                 else if ($0 ~ /c__.+c__/ || $0 !~ /c__unknown/) {print $0} \
+                 else {print $0 ",c__missing, NA"}}' | \
+    awk -F ',' '{if ($0 !~ /o__/) {print $0 ",o__missing, NA"} \
+                 else if ($0 ~ /o__.+o__/ || $0 !~ /o__unknown/) {print $0} \
+                 else {print $0 ",o__missing, NA"}}' | \
+    awk -F ',' '{if ($0 !~ /f__/) {print $0 ",f__missing, NA"} \
+                 else if ($0 ~ /f__.+f__/ || $0 !~ /f__unknown/) {print $0} \
+                 else {print $0 ",f__missing, NA"}}' | \
+    awk -F ',' '{if ($0 !~ /g__/) {print $0 ",g__missing, NA"} \
+                 else if ($0 ~ /g__.+g__/ || $0 !~ /g__unknown/) {print $0} \
+                 else {print $0 ",g__missing, NA"}}' | \
+    awk -F ',' '{if ($0 !~ /s__/) {print $0 ",s__missing, NA"} \
+                 else if ($0 ~ /s__.+s__/ || $0 !~ /s__unknown/) {print $0} \
+                 else {print $0 ",s__missing, NA"}}' | \
+    awk -F ',' '{if ($0 ~ /b__/ || $0 ~ /v__/) {print $0} \
+                 else {print $0 ",b__NA, NA"}}' \
+> ${MAIN_DIR}/${OUT_DIR}/tmp_step1_megan_prep.tsv
+
+## Step 4 Command 2
+awk -F ',' '{ for (i=1; i<=NF; ++i) { if ($i ~ /d__/ && $i !~ /d__unknown/) {print $1 ";" $i ";" $(i+1) ",\t" $0} } }' ${MAIN_DIR}/${OUT_DIR}/tmp_step1_megan_prep.tsv | \
+    awk -F ',' '{ for (i=1; i<=NF; ++i) { if ($i ~ /k__/ && $i !~ /k__unknown/) {print $1 ";" $i ";" $(i+1) ",\t" $0} } }' | \
+    awk -F ',' '{ for (i=1; i<=NF; ++i) { if ($i ~ /p__/ && $i !~ /p__unknown/) {print $1 ";" $i ";" $(i+1) ",\t" $0} } }' | \
+    awk -F ',' '{ for (i=1; i<=NF; ++i) { if ($i ~ /c__/ && $i !~ /c__unknown/) {print $1 ";" $i ";" $(i+1) ",\t" $0} } }' | \
+    awk -F ',' '{ for (i=1; i<=NF; ++i) { if ($i ~ /o__/ && $i !~ /o__unknown/) {print $1 ";" $i ";" $(i+1) ",\t" $0} } }' | \
+    awk -F ',' '{ for (i=1; i<=NF; ++i) { if ($i ~ /f__/ && $i !~ /f__unknown/) {print $1 ";" $i ";" $(i+1) ",\t" $0} } }' | \
+    awk -F ',' '{ for (i=1; i<=NF; ++i) { if ($i ~ /g__/ && $i !~ /g__unknown/) {print $1 ";" $i ";" $(i+1) ",\t" $0} } }' | \
+    awk -F ',' '{ for (i=1; i<=NF; ++i) { if ($i ~ /s__/ && $i !~ /s__unknown/) {print $1 ";" $i ";" $(i+1) ",\t" $0} } }' | \
+    awk -F ',' '{ for (i=1; i<=NF; ++i) { if (($i ~ /b__/ && $i !~ /b__unknown/) ||($i ~ /v__/ && $i !~ /v__unknown/)) {print $1 ";" $i ";" $(i+1) } } }' \
+> ${MAIN_DIR}/${OUT_DIR}/tmp_step2_megan_prep.tsv
+
+## Step 4 Command 3
+awk -F ';' '{if ($4 ~ /k__missing/) {split ($2, DOM, "__"); print $1 ";" $2 ";" $3 ";k__unknown " DOM[2] " kingdom; NA; "$6 ";" $7 ";" $8 ";" $9 ";" $10 ";" $11 ";" $12 ";" $13 ";" $14 ";" $15 ";" $16 ";" $17 ";" $18 ";" $19} \
+                 else {print $0}}' ${MAIN_DIR}/${OUT_DIR}/tmp_step2_megan_prep.tsv | \
+    awk -F ';' '{if ($6 ~ /p__missing/ && $4 !~ /k__unknown/) {split ($4, KIN, "__"); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";p__unknown " KIN[2] " phylum; NA;" $8 ";" $9 ";" $10 ";" $11 ";" $12 ";" $13 ";" $14 ";" $15 ";" $16 ";" $17 ";" $18 ";" $19} \
+                 else if ($6 ~ /p__missing/ && $4 ~ /k__unknown/) {split ($4, KIN, " "); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";p__unknown " KIN[2] " phylum; NA;" $8 ";" $9 ";" $10 ";" $11 ";" $12 ";" $13 ";" $14 ";" $15 ";" $16 ";" $17 ";" $18 ";" $19}
+                 else {print $0}}' | \
+    awk -F ';' '{if ($8 ~ /c__missing/ && $6 !~ /p__unknown/) {split ($6, PHY, "__" ); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";" $6 ";" $7 ";c__unknown " PHY[2] " class; NA;" $10 ";" $11 ";" $12 ";" $13 ";" $14 ";" $15 ";" $16 ";" $17 ";" $18 ";" $19} \
+                 else if ($8 ~ /c__missing/ && $6 ~ /p__unknown/) {split ($6, PHY, " " ); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";" $6 ";" $7 ";c__unknown " PHY[2] " class; NA;" $10 ";" $11 ";" $12 ";" $13 ";" $14 ";" $15 ";" $16 ";" $17 ";" $18 ";" $19} \
+                 else {print $0}}' | \
+    awk -F ';' '{if ($10 ~ /o__missing/ && $8 !~ /c__unknown/) {split ($8, CLA, "__" ); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";" $6 ";" $7 ";" $8 ";" $9 ";o__unknown " CLA[2] " order; NA;" $12 ";" $13 ";" $14 ";" $15 ";" $16 ";" $17 ";" $18 ";" $19} \
+                 else if ($10 ~ /o__missing/ && $8 ~ /c__unknown/) {split ($8, CLA, " " ); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";" $6 ";" $7 ";" $8 ";" $9 ";o__unknown " CLA[2] " order; NA;" $12 ";" $13 ";" $14 ";" $15 ";" $16 ";" $17 ";" $18 ";" $19} \
+                 else {print $0}}' | \
+    awk -F ';' '{if ($12 ~ /f__missing/ && $10 !~ /o__unknown/) {split ($10, ORD, "__" ); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";" $6 ";" $7 ";" $8 ";" $9 ";" $10 ";" $11 ";f__unknown " ORD[2] " family; NA;"  $14 ";" $15 ";" $16 ";" $17 ";" $18 ";" $19} \
+                 else if ($12 ~ /f__missing/ && $10 ~ /o__unknown/) {split ($10, ORD, " " ); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";" $6 ";" $7 ";" $8 ";" $9 ";" $10 ";" $11 ";f__unknown " ORD[2] " family; NA;"  $14 ";" $15 ";" $16 ";" $17 ";" $18 ";" $19} \
+                 else {print $0}}' | \
+    awk -F ';' '{if ($14 ~ /g__missing/ && $12 !~ /f__unknown/) {split ($12, FAM, "__" ); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";" $6 ";" $7 ";" $8 ";" $9 ";" $10 ";" $11 ";" $12 ";" $13 ";g__unknown " FAM[2] " genus; NA;"  $16 ";" $17 ";" $18 ";" $19} \
+                 if ($14 ~ /g__missing/ && $12 ~ /f__unknown/) {split ($12, FAM, " " ); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";" $6 ";" $7 ";" $8 ";" $9 ";" $10 ";" $11 ";" $12 ";" $13 ";g__unknown " FAM[2] " genus; NA;"  $16 ";" $17 ";" $18 ";" $19} \
+                 else {print $0}}' | \
+    awk -F ';' '{if ($16 ~ /s__missing/ && $14 !~ /g__unknown/) {split ($14, GEN, "__" ); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";" $6 ";" $7 ";" $8 ";" $9 ";" $10 ";" $11 ";" $12 ";" $13 ";" $14 ";" $15 ";s__unknown " GEN[2] " species; NA;" $18 ";" $19} \
+                 else if ($16 ~ /s__missing/ && $14 ~ /g__unknown/) {split ($14, GEN, " " ); print $1 ";" $2 ";" $3 ";" $4 ";" $5 ";" $6 ";" $7 ";" $8 ";" $9 ";" $10 ";" $11 ";" $12 ";" $13 ";" $14 ";" $15 ";s__unknown " GEN[2] " species; NA;" $18 ";" $19} \
+                 else {print $0}}' \
+> ${MAIN_DIR}/${OUT_DIR}/megan_taxonpath_withcounts.tsv
+
+## Note that we assign an environmental variable, "HITS", which is the number of blast hits that match at a given taxonomic level.
+## To confidently and correctly assign taxa this should be set to 100(%), so we do not advise changing the value. However, it can be 
+## reduced to increase taxonomic assignment at lower levels. Just be aware that this will likely produce spurious or arbitrary results.
+
+HITS=100
+
+## Step 4 Command 4
+awk -v var="${HITS}" -F ';' '
+{ if (NF == 19) { \
+        if ($(NF) >= var) {print $1 "\t" $(NF-17) "\t" $(NF-15) "\t" $(NF-13) "\t" $(NF-11) "\t" $(NF-9) "\t" $(NF-7) "\t" $(NF-5) "\t" $(NF-3) "\t" $(NF-1)} \
+        else if ($(NF-2) >= var) {print $1 "\t" $(NF-17) "\t" $(NF-15) "\t" $(NF-13) "\t" $(NF-11) "\t" $(NF-9) "\t" $(NF-7) "\t" $(NF-5) "\t" $(NF-3) "\t" "x__NA"} \
+        else if ($(NF-4) >= var) {print $1 "\t" $(NF-17) "\t" $(NF-15) "\t" $(NF-13) "\t" $(NF-11) "\t" $(NF-9) "\t" $(NF-7) "\t" $(NF-5) "\t" "x__NA" "\t" "x__NA"} \
+        else if ($(NF-6) >= var) {print $1 "\t" $(NF-17) "\t" $(NF-15) "\t" $(NF-13) "\t" $(NF-11) "\t" $(NF-9) "\t" $(NF-7) "\t" "x__NA" "\t" "x__NA" "\t" "x__NA"} \
+        else if ($(NF-8) >= var) {print $1 "\t" $(NF-17) "\t" $(NF-15) "\t" $(NF-13) "\t" $(NF-11) "\t" $(NF-9) "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA"} \
+        else if ($(NF-10) >= var) {print $1 "\t" $(NF-17) "\t" $(NF-15) "\t" $(NF-13) "\t" $(NF-11) "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA"} \
+        else if ($(NF-12) >= var) {print $1 "\t" $(NF-17) "\t" $(NF-15) "\t" $(NF-13) "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA"} \
+        else if ($(NF-14) >= var) {print $1 "\t" $(NF-17) "\t" $(NF-15) "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA"} \
+        else if ($(NF-16) >= var) {print $1 "\t" $(NF-17) "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA"} \
+        else {print $1 "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA"} \
+    } \
+    else {print $1 "\t" "z__check_megan_full_out" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA" "\t" "x__NA"} \
+}' ${MAIN_DIR}/${OUT_DIR}/megan_taxonpath_withcounts.tsv | sed -e 's/.__//g' | tr ' ' '_' \
+> ${MAIN_DIR}/${OUT_DIR}/megan_taxonpath_out.tsv
+
+## Step 4 Command 5
+awk -v var="${HITS}" -F ';' '
 { \
-    if (NF < 14) {print $1 "\t" "x__no assignment"} \
-    else if (NF == 14) { \
-        if ($(NF-1) >= var) {print $1 "\t" $(NF-2)} \
-        else if ($(NF-3) >= var) {print $1 "\t" $(NF-4)} \
-        else if ($(NF-5) >= var) {print $1 "\t"  $(NF-6)} \
-        else if ($(NF-7) >= var) {print $1 "\t"  $(NF-8)} \
-        else if ($(NF-9) >= var) {print $1 "\t" $(NF-10)} \
-        else if ($(NF-11) >= var) {print $1 "\t" $(NF-12)} \
-        else {print $1 "\t" "y__unknown"} \
+    if (NF == 19) { \
+        if ($(NF) >= var) {print $1 "\t" $(NF-1)} \
+        else if ($(NF-2) >= var) {print $1 "\t" $(NF-3)} \
+        else if ($(NF-4) >= var) {print $1 "\t"  $(NF-5)} \
+        else if ($(NF-6) >= var) {print $1 "\t"  $(NF-7)} \
+        else if ($(NF-8) >= var) {print $1 "\t" $(NF-9)} \
+        else if ($(NF-10) >= var) {print $1 "\t" $(NF-11)} \
+        else if ($(NF-12) >= var) {print $1 "\t" $(NF-13)} \
+        else if ($(NF-14) >= var) {print $1 "\t" $(NF-15)} \
+        else if ($(NF-16) >= var) {print $1 "\t" $(NF-17)} \
+        else {print $1 "\t" "x__NA"} \
     } \
-    else if (NF == 16) { \
-        if ($(NF-1) >= var) {print $1 "\t" $(NF-2)} \
-        else if ($(NF-3) >= var) {print $1 "\t" $(NF-4)} \
-        else if ($(NF-5) >= var) {print $1 "\t"  $(NF-6)} \
-        else if ($(NF-7) >= var) {print $1 "\t"  $(NF-8)} \
-        else if ($(NF-9) >= var) {print $1 "\t" $(NF-10)} \
-        else if ($(NF-11) >= var) {print $1 "\t" $(NF-12)} \
-        else if ($(NF-13) >= var) {print $1 "\t" $(NF-14)} \
-        else {print $1 "\t" "y__unknown"} \
-    } \
-    else if (NF == 18) { \
-        if ($(NF-1) >= var) {print $1 "\t" $(NF-2)} \
-        else if ($(NF-3) >= var) {print $1 "\t" $(NF-4)} \
-        else if ($(NF-5) >= var) {print $1 "\t"  $(NF-6)} \
-        else if ($(NF-7) >= var) {print $1 "\t"  $(NF-8)} \
-        else if ($(NF-9) >= var) {print $1 "\t" $(NF-10)} \
-        else if ($(NF-11) >= var) {print $1 "\t" $(NF-12)} \
-        else if ($(NF-13) >= var) {print $1 "\t" $(NF-14)} \
-        else if ($(NF-15) >= var) {print $1 "\t" $(NF-16)} \
-        else {print $1 "\t" "y__unknown"} \
-    } \
-    else if (NF == 20) { \
-        if ($(NF-1) >= var) {print $1 "\t" $(NF-2)} \
-        else if ($(NF-3) >= var) {print $1 "\t" $(NF-4)} \
-        else if ($(NF-5) >= var) {print $1 "\t"  $(NF-6)} \
-        else if ($(NF-7) >= var) {print $1 "\t"  $(NF-8)} \
-        else if ($(NF-9) >= var) {print $1 "\t" $(NF-10)} \
-        else if ($(NF-11) >= var) {print $1 "\t" $(NF-12)} \
-        else if ($(NF-13) >= var) {print $1 "\t" $(NF-14)} \
-        else if ($(NF-15) >= var) {print $1 "\t" $(NF-16)} \
-        else if ($(NF-17) >= var) {print $1 "\t" $(NF-18)} \
-        else {print $1 "\t" "y__unknown"} \
-    } \
-    else if (NF == 22) { \
-        if ($(NF-1) >= var) {print $1 "\t" $(NF-2)} \
-        else if ($(NF-3) >= var) {print $1 "\t" $(NF-4)} \
-        else if ($(NF-5) >= var) {print $1 "\t"  $(NF-6)} \
-        else if ($(NF-7) >= var) {print $1 "\t"  $(NF-8)} \
-        else if ($(NF-9) >= var) {print $1 "\t" $(NF-10)} \
-        else if ($(NF-11) >= var) {print $1 "\t" $(NF-12)} \
-        else if ($(NF-13) >= var) {print $1 "\t" $(NF-14)} \
-        else if ($(NF-15) >= var) {print $1 "\t" $(NF-16)} \
-        else if ($(NF-17) >= var) {print $1 "\t" $(NF-18)} \
-        else if ($(NF-19) >= var) {print $1 "\t" $(NF-20)} \
-        else {print $1 "\t" "y__unknown"} \
-    } \
-    else {print $1 "\t" "z__check meganfull"}
-}' | awk -v OFS="\t" -F '[\t__]' '{print $1 "_" $2 "\t" $3 "\t" $5}' | tr ' ' '_' > ${MAIN_DIR}/${OUT_DIR}/megan_sum_out.tsv
+    else {print $1 "\t" "y__check_megan_full_out"} \
+}' ${MAIN_DIR}/${OUT_DIR}/megan_taxonpath_withcounts.tsv | awk -v OFS="\t" -F '[\t__]' '{print $1 "_" $2 "\t" $3 "\t" $5}' | tr ' ' '_' \
+> ${MAIN_DIR}/${OUT_DIR}/megan_summary_out.tsv
+
+# Remove tmp files now
+ rm ${MAIN_DIR}/${OUT_DIR}/tmp_step*_megan_prep.tsv
+ 
