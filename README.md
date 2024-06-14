@@ -208,31 +208,37 @@ All the rows displayed by head (the top 10) are likely to show results for the s
 <details><summary><font size="6"><b>4) Run the MEGAN blast2lca algorithm</font></b></summary>
 <br></br>
   
-<font size="4"><b>4.1) Run blast2lca with stringent parameters  </b></font>
+<font size="4"><b>4.1) Run blast2lca  </b></font>
 <br></br>
 
-For this step we will use the [MEGAN](https://uni-tuebingen.de/en/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/algorithms-in-bioinformatics/software/megan6/) a suite of bioinformatic algorithms. MEGAN contains various tools: we are interested in blast2lca, which calculates the LCA or [lowest common ancestor](https://en.wikipedia.org/wiki/Lowest_common_ancestor) using multiple blast results.
+For this step we will use [MEGAN](https://uni-tuebingen.de/en/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/algorithms-in-bioinformatics/software/megan6/), a suite of bioinformatic algorithms. MEGAN contains various tools: we are interested in blast2lca, which calculates the LCA or [lowest common ancestor](https://en.wikipedia.org/wiki/Lowest_common_ancestor) using multiple blast results.
 <br></br>
 
 The 02_run_blast2lca.sh script takes the output from blast, and does the following:
 <br></br>
 
 1. If blast was run in array mode, chunks are merged (this is automatically detected)
-2. Blast results are filtered by pident (percentage of identical positions: column 3) provided by the user
-3. The megan2lca (lowest common ancestor) algorithm is used to determine taxonomic likelihood of a sequence at all taxonomic levels
-4. Taxonomic identification is carried out based on the percentage of alignments matching at a taxonomic level provided by the user
+2. Blast results are filtered by pident (percentage of identical positions: column 3), which is provided by the user
+3. The megan2lca (lowest common ancestor) algorithm determines taxonomic likelihood of a sequence at all taxonomic levels. The user can adjust the ensitivity of this by varying the top percent arguement.
+4. Two main output files are generated, a summary file (the lowest common ancestor and its rank) and a taxon path file (all the taxonomic levels to the lowest common ancestor).
 <br></br>
 
-This script produces 2 intermediate files ('filtered_blast.out.tab' and 'megan_full_out.tsv') as well as a final output called 'megan_sum_out.tsv'.
+This script produces some temporary files (which are deleted), some intermediate files ('filtered_blast.out.tab', 'megan_full_out.tsv' and 'megan_taxonpath_withcounts.tsv') that may be useful, and two final output files: 'megan_summary_out.tsv' and megan_taxonpath_out.tsv.
 <br></br>
 
 <b>To run the 02_run_blast2lca.sh script you must provide:</b>
 * Minimum percentage identity (0-100) for the blast results to be considered by blast2lca (-B)
-* Minimum percentage of matching alignments (0-100) for taxonomic assignemnt in blast2lca (-M)
+* The Top Percent parameter (1-10) for lca calculation (-T)
 * Absolute path to the megan nucleotide database (-D)
 <br></br>
 
-If running the analysis on BESSEMER, the database should be available at '/shared/genomicsdb2/shared/megan/megan-nucl-Feb2022.db'. Otherwise you can download your own version from the [MEGAN Alternative Download Page](https://unitc-my.sharepoint.com/personal/iijhu01_cloud_uni-tuebingen_de/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fiijhu01%5Fcloud%5Funi%2Dtuebingen%5Fde%2FDocuments%2FApps%2FMegan&ga=1). For deciding which values of -B and -M to use, we recommend initially using relatively strict (high) values for both, such as:
+Blast will potentially output hundred of hits for each ASV. The minimum percentage identity threshold can be used to reduce the number of hits that are considered by MEGAN's blast2lca algorithm. We suggest using a relatively high value to start with (90 or 95), which can be reduced if high numbers of NAs appear in the summary file.
+<br></br>
+
+Blast2lca only retains blast hits that are less than the 'Top Percent' value away from the highest scroing hit (based on bit score). Top Percent can actually be set to anything from 0 to 100 (with a default of 10), but in our experience values of 1-10 are most appropriate. Setting Top Percent to a low value (1.5, 2) will retain a relatively smaller number of blast hits and likely result in better taxonomic assignment. However if the ASVs derive from organisms that have poor representation in the reference database then it may be wiser to set Top Percent to a higher value (5-10). For more information about Top Percent and the blast2lca algorithm please see the [MEGAN manual](https://software-ab.cs.uni-tuebingen.de/download/megan6/manual.pdf).
+<br></br>
+
+If running the analysis on BESSEMER, the megan nucleotide database should be available at '/shared/genomicsdb2/shared/megan/megan-nucl-Feb2022.db'. Otherwise you can download your own version from the [MEGAN Alternative Download Page](https://unitc-my.sharepoint.com/personal/iijhu01_cloud_uni-tuebingen_de/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fiijhu01%5Fcloud%5Funi%2Dtuebingen%5Fde%2FDocuments%2FApps%2FMegan&ga=1). For deciding which values of -B and -M to use, we recommend initially using relatively strict (high) values for both, such as:
 * -B 95
 * -M 100
 <br></br>
@@ -240,7 +246,7 @@ If running the analysis on BESSEMER, the database should be available at '/share
 Thus you might run the job like so:
 
 ```
-qsub b2m_scripts/02_run_blast2lca.sh -B 95 -M 100 -D /shared/genomicsdb2/shared/megan/megan-nucl-Feb2022.db
+qsub b2m_scripts/02_run_blast2lca.sh -B 95 -T 2 -D /shared/genomicsdb2/shared/megan/megan-nucl-Feb2022.db
 ```
 
 <br></br>
@@ -248,48 +254,56 @@ qsub b2m_scripts/02_run_blast2lca.sh -B 95 -M 100 -D /shared/genomicsdb2/shared/
 <font size="4"><b>4.2) Tweaking the parameters of the blast2lca script</b></font>
 <br><br>
 
-You can look at the results for the first few sequences with 
-  
+You can look at the results for the first few sequences of the summary file with:
+
 ```
-head blast_out/megan_sum_out.tsv
+head blast_out/megan_summary_out.tsv
 ```
-Columns corespond to: ASV number / taxonomic rank / LCA taxon. 
+Columns corespond to: ASV ID / taxonomic rank / LCA taxon. 
 
 To get a rough idea of how well blast and megan have worked, you can run the following code:
 
 ```
-cut -f2 blast_out/megan_sum_out.tsv | sort | uniq -c 
+cut -f2 blast_out/megan_summary_out.tsv | sort | uniq -c 
 ```
   
-This will show how many sequences have been assigned to each taxonomic rank. Hopefully the majority of your sequences are at s (species/subspecies) or g (genus) level. The x, y and z ranks (if they appear) refer to different failures:
-<br><br>
-* x (no assignment) there were no assignments at the given megan threshold (-M)
-* y (unknown) the megan2lca algorithm was unable to assign taxonomy (irrespective of the megan threshold) 
-* z (check_meganfull) there may be a problem with the blast2lca output for this sequence - refer to that sequence in the megan_full_out.tsv result
+This will show how many sequences have been assigned to each taxonomic rank. Hopefully the majority of your sequences are at 's' (species) or 'g' (genus) level. The 'x' level refers to ASVs where the MEGAN blast2lca algorithm was unable to assign taxonomy. Although subspecies or variants are considered (indicated by 'v') most sequences do not include this level of taxonomic information, so we do not expect a high number here
 <br><br>
 
-It is common to have some non assigned and unknown taxa in your data, as well as some taxa assigned to higher levels (e.g. class). Deciding what is a 'good' result will depend on many factors including experiment type, sampling strategy, primers used etc. If you are not satisfied, you can try tweaking the values of -B and -M. 
+It is common to have some non assigned and unknown taxa in your data, as well as some taxa assigned to higher levels (e.g. class). Deciding what is a 'good' result will depend on many factors including experiment type, sampling strategy, primers used etc. If you are not satisfied, you can try tweaking the values of -B and -T. 
 <br><br>
 
-Reducing -B allows sequences with lower blast percentage identity to be considered by blast2lca, and may reduce the number of sequences without assignment. Reducing -M can allow higher level (more specific) taxonomic assignemnts, although there is a chance of misidentification.
+Reducing -B allows sequences with lower blast percentage identity to be considered by MEGAN, and may reduce the number of sequences without assignment.  
+Reducing -T will decrease the number of sequences included in the blast2lca, potentially providing more specific taxonomic assignement.
 <br>
 </details>
 <br>
+
+Take a look at the results for the taxon path file with:
+
+```
+head blast_out/megan_taxonpath_out.tsv
+```
+Columns corespond to: ASV ID / domain / kingdom / phylum / class / order / family / genus / species / subspecies 
+
+The taxon path is provided down to the lowest common ancestor. Lower taxonomic levels are then assigned an NA. If taxonomic information does not exist in the database then it will be referred to as an unknown example using the next highest available taxa. For example, molluscs in the family Lymnaeoidea (class gastropoda) do not have information available about their order (although infraclass, superorder and superfamily levels exist). In this case they will be assigned "unknown_gastropod_order". This does not mean taxonomic assignment has failed, just that the taxonomy of the organism may not conform with the standard 8/9 taxonomic ranks.  
+
+<br><br>
 
 <details><summary><font size="6"><b>5) OPTIONAL: Combine with dada2 output to create a summary file</font></b></summary>
 <br><br>
   
 <font size="4"><b>5.1) Run the summary file script  </b></font>
 <br><br>
-If you have run this pipeline after dada2, you may wish to combine taxonomic assignment results with sequence data and ASV counts from dada2 to create a summary file with all the information.
+If you have run this pipeline following dada2, you may wish to combine taxonomic assignment results with sequence data and ASV counts from dada2 to create a summary file with all the information.
 <br><br>
-Assuming you have created the 'megan_sum_out.tsv' file in the previous step and have the files '06_ASV_seqs.fasta' and '06_ASV_counts.tsv' in your 'working_data' directory you should be able to run the following script (no arguments need to be supplied): 
+Assuming you have created the 'megan_summary_out.tsv' and 'megan_taxonpath_out.tsv' files in the previous step, and have the files '06_ASV_seqs.fasta' and '06_ASV_counts.tsv' in your 'working_data' directory you should be able to run the following script (no arguments need to be supplied): 
 
 ```
 qsub b2m_scripts/03_run_make_summary_file.sh
 ```
   
-This script will call the R script 03_make_summary_file.R and write the output to blast_out/ASV_taxa-summary_counts.tsv. This file contains a summary of taxonomic, sequence, and count results.
+This script will call the R script 03_make_summary_file.R and write the output to blast_out/ASV_taxa_seq_counts.tsv. This file contains the taxonomic results (lca taxon and taxon path to the lca taxon), sequence, and count results.
 </font>
 <br>
 </details>
