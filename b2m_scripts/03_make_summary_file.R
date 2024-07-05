@@ -43,5 +43,31 @@ mi_tab_final <- merge(taxsum,mi_tab_path, by ="asv", all=TRUE)
 mi_tab_final$asv_number<-as.numeric(mi_tab_final$asv_number)
 mi_tab_final  <- mi_tab_final [order(mi_tab_final$asv_number),]
 
-## 5). Save the file, removing asv_number
-write.table(mi_tab_final [,-c(14)], "working_data/ASV_taxa_seq_counts.tsv", sep = "\t", quote=F, col.names=T, row.names = F)
+## 7). Save the file, removing asv_number
+write.table(mi_tab_final[,-c(14)], "working_data/ASV_taxa_seq_counts.tsv", sep = "\t", quote=F, col.names=T, row.names = F)
+
+## 8). Prepare phyloseq files
+##  a. taxmat
+row.names(taxpath) <- taxpath$V1
+taxmat <- taxpath[,c(2:10)]
+colnames(taxmat) <- c("domain","kingdom","phylum","class","order","family","genus","species","subspecies")
+write.table(taxmat, "working_data/ps_taxamat.tsv", sep = "\t", quote=F, col.names=T, row.names = T)
+
+##  b. otumat (counts)
+row.names(mi_tab_final) <- mi_tab_final$asv
+countmat <- mi_tab_final[,-c(1:14)]
+write.table(countmat, "working_data/ps_countmat.tsv", sep = "\t", quote=F, col.names=T, row.names = T)
+
+##  c. phylogeny
+##   i. setup
+seqs <- mi_tab_final$seqs_vec
+names(seqs) <- row.names(mi_tab_final)
+##   ii. alignment and tree creation
+mult <- msa(seqs, method="ClustalW", type="dna", order="input")
+phang.align <- as.phyDat(mult, type="DNA", names=seqs)
+dm <- dist.ml(phang.align)
+treeNJ <- NJ(dm) # Note, tip order != sequence order
+fit = pml(treeNJ, data=phang.align)
+fitGTR <- update(fit, k=4, inv=0.2)
+fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE, rearrangement = "stochastic", control = pml.control(trace = 0))
+saveRDS(fitGTR$tree, file = "working_data/ps_phylogeny.rds")

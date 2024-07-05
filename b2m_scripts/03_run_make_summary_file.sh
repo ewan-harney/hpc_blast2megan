@@ -24,11 +24,15 @@ The blast2lca files required are: \n
 - blast_out/megan_taxonpath_out.tsv \n
 - blast_out/megan_summary_out.tsv \n
 Whilst the dada2 output files required are: \n
--working_data/06_ASV_seqs.fasta \n
--working_data/06_ASV_counts.tsv \n
+- working_data/06_ASV_seqs.fasta \n
+- working_data/06_ASV_counts.tsv \n
 These four files are combined and the output is written to:\n
 - working_data/ASV_taxa_seq_counts.tsv \n
-The script will only work if all 4 files are found, but does not require any arguments, and can be run as so: \n
+Additionally the script will output three files for phyloseq analyses:\n
+- working_data/ps_taxamat.tsv \n
+- working_data/ps_countmat.tsv \n
+- working_data/ps_phylogeny.rds \n
+The script will only work if all 4 input files are found, but does not require any arguments, and can be run as so: \n
 qsub b2m_scripts/03_run_make_summary_file.sh \n"
 
 MAIN_DIR=$PWD
