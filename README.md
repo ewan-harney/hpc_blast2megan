@@ -289,20 +289,25 @@ The taxon path is provided down to the lowest common ancestor. Lower taxonomic l
 </details>
 <br>
 
-<details><summary><font size="6"><b>5) OPTIONAL: Combine with dada2 output to create a summary file</font></b></summary>
+<details><summary><font size="6"><b>5) OPTIONAL: Combine with dada2 output to create summary files</font></b></summary>
 <br><br>
   
-<font size="4"><b>5.1) Run the summary file script  </b></font>
+<font size="4"><b>5.1) Run the summary files script  </b></font>
 <br><br>
-If you have run this pipeline following dada2, you may wish to combine taxonomic assignment results with sequence data and ASV counts from dada2 to create a summary file with all the information.
+If you have run this pipeline following dada2, you may wish to combine taxonomic assignment results with sequence data and ASV counts from dada2 to create a summary file with all the information. You may also wish to create files which can be used as input in downstream analysis with the popular community analysis R package [phyloseq](https://joey711.github.io/phyloseq/).
 <br><br>
-Assuming you have created the 'megan_summary_out.tsv' and 'megan_taxonpath_out.tsv' files in the previous step, and have the files '06_ASV_seqs.fasta' and '06_ASV_counts.tsv' in your 'working_data' directory you should be able to run the following script (no arguments need to be supplied): 
+Assuming that you have created the 'megan_summary_out.tsv' and 'megan_taxonpath_out.tsv' files in the previous step, and that you have the files '06_ASV_seqs.fasta' and '06_ASV_counts.tsv' in your 'working_data' directory you should be able to run the following script (no arguments need to be supplied): 
 
 ```
-qsub b2m_scripts/03_run_make_summary_file.sh
+qsub b2m_scripts/03_run_make_summary_files.sh
 ```
   
-This script will call the R script 03_make_summary_file.R and write the output to blast_out/ASV_taxa_seq_counts.tsv. This file contains the taxonomic results (lca taxon and taxon path to the lca taxon), sequence, and count results.
+This script will call the R script 03_make_summary_files.R and write several outputs files to the working_data directory:
+- ASV_taxa_seq_counts.tsv: complete summary of taxonomic results (lca taxon and taxon path to the lca taxon), sequence, and count results,
+- ps_taxamat.tsv : ASV taxonomic results in matrix format for phyloseq, 
+- ps_countmat.tsv : ASV counts results in matrix format for phyloseq, 
+- ps_phylogeny.rds : phylogenetic tree prepared according to protocol of [Callahan et al. 2016](https://f1000research.com/articles/5-1492/v1), see subsection _Construct the phylogenetic tree_,
+
 </font>
 <br>
 </details>

@@ -33,9 +33,9 @@ Additionally the script will output three files for phyloseq analyses:\n
 - working_data/ps_countmat.tsv \n
 - working_data/ps_phylogeny.rds \n
 The script will only work if all 4 input files are found, but does not require any arguments, and can be run as so: \n
-qsub b2m_scripts/03_run_make_summary_file.sh \n"
+qsub b2m_scripts/03_run_make_summary_files.sh \n"
 
 MAIN_DIR=$PWD
 
 # Run the R script to combine MEGAN, sequence and counts into a single summary file
-Rscript $PWD/b2m_scripts/03_make_summary_file.R
+Rscript $PWD/b2m_scripts/03_make_summary_files.R
