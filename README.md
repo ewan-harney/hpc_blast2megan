@@ -219,7 +219,7 @@ The 02_run_blast2lca.sh script takes the output from blast, and does the followi
 
 1. If blast was run in array mode, chunks are merged (this is automatically detected)
 2. Blast results are filtered by pident (percentage of identical positions: column 3), which is provided by the user
-3. The megan2lca (lowest common ancestor) algorithm determines taxonomic likelihood of a sequence at all taxonomic levels. The user can adjust the ensitivity of this by varying the top percent arguement.
+3. The megan2lca (lowest common ancestor) algorithm determines taxonomic likelihood of a sequence at all taxonomic levels. The user can adjust the sensitivity of this by varying the top percent arguement.
 4. Two main output files are generated, a summary file (the lowest common ancestor and its rank) and a taxon path file (all the taxonomic levels to the lowest common ancestor).
 <br></br>
 
