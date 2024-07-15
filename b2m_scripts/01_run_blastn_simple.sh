@@ -46,7 +46,7 @@ OUT_DIR="blast_out"
 ## create the output directory
 mkdir -p ${MAIN_DIR}/${OUT_DIR}
 ## make a symlink to ncbi taxdb files, which need to be in the current directory
-ln -s /shared/genomicsdb2/shared/ncbi_nr/current/taxdb* .
+ln -s /shared/genomicsdb2/shared/ncbi_nt/current/taxdb* .
 
 ## run blast 
 blastn -query ${MAIN_DIR}/${FASTA_PATH} -task blastn -db ${DATABASE} -out ${MAIN_DIR}/${OUT_DIR}/all_blast.out.tab -num_threads 4 -outfmt "6 qseqid saccver pident length mismatch gapopen qstart qend sstart send evalue bitscore staxid ssciname scomnames sblastname sskingdoms stitle"

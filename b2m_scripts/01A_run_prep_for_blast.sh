@@ -47,7 +47,7 @@ PREP_DIR="split_fasta"
 mkdir -p ${MAIN_DIR}/${PREP_DIR}
 mkdir -p ${MAIN_DIR}/logs
 ## make a symlink to ncbi taxdb files, which need to be in the current directory for the 01B script
-ln -s /shared/genomicsdb2/shared/ncbi_nr/current/taxdb* .
+ln -s /shared/genomicsdb2/shared/ncbi_nt/current/taxdb* .
 ## Change to the split_fasta directory
 cd ${MAIN_DIR}/${PREP_DIR}
 

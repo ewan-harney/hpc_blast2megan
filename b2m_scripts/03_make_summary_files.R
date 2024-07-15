@@ -1,3 +1,7 @@
+#load msa and phangorn libraries
+library(msa)
+library(phangorn)
+
 # get path
 path<-getwd()
 
