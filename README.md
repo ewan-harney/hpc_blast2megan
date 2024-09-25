@@ -111,7 +111,7 @@ Although we suggest 1000 sequences as a threshold, you can run an array with les
 <font size="4"><b>3.2) Running blastn in simple mode</b></font>
 <br></br>
 
-Running blastn in simple mode will create a new directory called blast_out in your current directory, as well as symolic links to the ncbi taxadb files 'taxdb.btd' and 'taxdb.bti'. It will then run blastn and the output will be saved as blast_out/all_blast.out.tab. 
+Running blastn in simple mode will create a new directory called blast_out in your current directory, as well as symbolic links to the ncbi taxadb files 'taxdb.btd' and 'taxdb.bti'. It will then run blastn and the output will be saved as blast_out/all_blast.out.tab. 
 <br></br>
 
 <b>To run 01_run_blastn_simple.sh you need to provide:</b>
@@ -131,7 +131,7 @@ qsub b2m_scripts/01_run_blastn_simple.sh -F working_data/06_ASV_seqs.fasta -B /s
 Running blastn in array mode requires running 2 scripts one after the other: '01A_run_split_fasta.sh' then '01B_run_blastn_array.sh'.
 <br></br>
 
-The '01A_run_prep_for_blast.sh' splits the input fasta file into chunks.fa files each containing 100 sequences which are written to a new directory called 'split_fasta'. It also creates symolic links to the ncbi taxadb files 'taxdb.btd' and 'taxdb.bti', and a directory called 'logs' used by script 01B. Finally it creates a text file 'split_fasta_list_of_X.txt' with the names of all the chunk.fa files to be used in the next step. In your file the 'X' will be the total number of chunk.fa files and is a parameter for script '01B_run_blastn_array.sh'.
+The '01A_run_prep_for_blast.sh' splits the input fasta file into chunks.fa files each containing 100 sequences which are written to a new directory called 'split_fasta'. It also creates symbolic links to the ncbi taxadb files 'taxdb.btd' and 'taxdb.bti', and a directory called 'logs' used by script 01B. Finally it creates a text file 'split_fasta_list_of_X.txt' with the names of all the chunk.fa files to be used in the next step. In your file the 'X' will be the total number of chunk.fa files and is a parameter for script '01B_run_blastn_array.sh'.
 <br></br>
 
 <b>To run 01A_run_prep_for_blast.sh  you need to provide:</b>
@@ -147,7 +147,7 @@ qsub b2m_scripts/01A_run_prep_for_blast.sh -F working_data/06_ASV_seqs.fasta
 The '01B_run_blastn_array.sh' script will then use an array to simultaneously blast multiple chunk.fa files against an ncbi database. This script will create a new directory called blast_out in your current directory and writes the output of blasting each chunk against the database to a seperate chunk.fa_blast.out.tab.
 <br></br>
 
-<b>To run 01A_run_prep_for_blast.sh you need to provide:</b>
+<b>To run 01B_run_blastn_array.sh you need to provide:</b>
 * the location of an ncbi database on the HPC (-B)
 * the number of input files to be run on the array (-N)
 <br></br>
