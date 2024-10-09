@@ -238,9 +238,9 @@ Blast will potentially output hundred of hits for each ASV. The minimum percenta
 Blast2lca only retains blast hits that are less than the 'Top Percent' value away from the highest scroing hit (based on bit score). Top Percent can actually be set to anything from 0 to 100 (with a default of 10), but in our experience values of 1-10 are most appropriate. Setting Top Percent to a low value (1.5, 2) will retain a relatively smaller number of blast hits and likely result in better taxonomic assignment. However if the ASVs derive from organisms that have poor representation in the reference database then it may be wiser to set Top Percent to a higher value (5-10). For more information about Top Percent and the blast2lca algorithm please see the [MEGAN manual](https://software-ab.cs.uni-tuebingen.de/download/megan6/manual.pdf).
 <br></br>
 
-If running the analysis on BESSEMER, the megan nucleotide database should be available at '/shared/genomicsdb2/shared/megan/megan-nucl-Feb2022.db'. Otherwise you can download your own version from the [MEGAN Alternative Download Page](https://unitc-my.sharepoint.com/personal/iijhu01_cloud_uni-tuebingen_de/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fiijhu01%5Fcloud%5Funi%2Dtuebingen%5Fde%2FDocuments%2FApps%2FMegan&ga=1). For deciding which values of -B and -M to use, we recommend initially using relatively strict (high) values for both, such as:
+If running the analysis on BESSEMER, the megan nucleotide database should be available at '/shared/genomicsdb2/shared/megan/megan-nucl-Feb2022.db'. Otherwise you can download your own version from the [MEGAN Alternative Download Page](https://unitc-my.sharepoint.com/personal/iijhu01_cloud_uni-tuebingen_de/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fiijhu01%5Fcloud%5Funi%2Dtuebingen%5Fde%2FDocuments%2FApps%2FMegan&ga=1). For deciding which values of -B and -T to use, we recommend initially using relatively strict (high) values for both, such as:
 * -B 95
-* -M 100
+* -T 2
 <br></br>
 
 Thus you might run the job like so:
