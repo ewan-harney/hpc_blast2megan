@@ -10,7 +10,7 @@
 #SBATCH -o makesumfile_%a.out # Standard output
 #SBATCH -e makesumfile_%a.err # Standard error
 #SBATCH --mem-per-cpu=16GB
-#SBATCH --time=6:00:00
+#SBATCH --time=72:00:00
 #SBATCH --mail-type=END
 #SBATCH --mail-user=user@uni.ac.uk
 
