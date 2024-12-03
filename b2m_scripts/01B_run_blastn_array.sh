@@ -25,7 +25,7 @@ split_fasta/split_fasta_list_of_*.txt. \n
 This number must be entered TWO TIMES: 1) as the array limit AND 2) as a mandatory argument for -N. \n
 Array job submission differs to normal batch job submission; here's an example of
 how to run it if you have 24 files, i.e. the list is called split_fasta_list_of_24.txt: \n
-sbatch --array=1-24 b2m_scripts/01B_run_blastn_array.sh -B /shared/genomicsdb2/shared/ncbi_nt/current/nt -N 24 \n
+sbatch --array=1-24%10 b2m_scripts/01B_run_blastn_array.sh -B /shared/genomicsdb2/shared/ncbi_nt/current/nt -N 24 \n
 The script makes a directory called blast_out and saves the results here. \n\n"
 
 ## List arguments
