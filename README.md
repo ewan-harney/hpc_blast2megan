@@ -164,10 +164,14 @@ Slurm job arrays allow batch jobs to be broken down into parts and run in parall
 If our original sequence.fasta file contained 2350 sequuences, it would have been split into 24 chunks, with the txt file named split_fasta_list_of_24.txt. This number, 24, will appear twice when we submit this job, which would be as follows:
   
 ```
-sbatch --array=1-24 b2m_scripts/01B_run_blastn_array.sh -B /shared/genomicsdb2/shared/ncbi_nt/current/nt -N 24
+sbatch --array=1-24%10 b2m_scripts/01B_run_blastn_array.sh -B /shared/genomicsdb2/shared/ncbi_nt/current/nt -N 24
 ```
   
-Notice that we use sbatch instead of qsub, and that this is followed by array=1- and then the number specific to our data set. This number also appears at the end of the command following the -N flag. Error and output log files for each job of the array will be written to the directory 'logs'
+Notice that we use sbatch instead of qsub, and that this is followed by array=1- and then the number specific to our data set. This number also appears at the end of the command following the -N flag. 
+  
+Another aspect of arrays to notice is the array 'throttle', indicated by the `%10` after `--array=1-24`. The throttle is the number of jobs that will be allowed to run simulataneously. It can take any numeric value but we suggest using 10; using a higher number can impact other users' ability to submit and run jobs on the HPC.
+  
+Error and output log files for each job of the array will be written to the directory 'logs'
 <br></br>
 
 <font size="4"><b>3.4) Monitoring and assessing the result of blastn</b></font>
